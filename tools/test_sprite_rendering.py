@@ -144,8 +144,16 @@ class Scenes:
                 for i, value in enumerate((20, species, 0)):
                     self.boy.memory[bank, addr + i] = value
                 self.write('wTrainerNo', 1)
-            self.write('wCurOpponent', 201 if context == 'trainer' else species)
-            self.jump('InitOpponent')
+                self.write('wCurOpponent', 201)
+                self.jump('InitOpponent')
+            else:
+                # Match TryDoWildEncounter's successful return state. A nonzero
+                # wCurOpponent means a scripted encounter; MAROWAK there is the
+                # special RESTLESS_SOUL ghost, not a normal wild Marowak.
+                self.write('wCurOpponent', 0)
+                self.write('wCurPartySpecies', species)
+                self.write('wEnemyMonSpecies2', species)
+                self.jump('InitBattleCommon')
             frames = self.wait('DisplayBattleMenu', buttons=True)
             self.boy.button_release('a')
             self.boy.tick(12, True)

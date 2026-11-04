@@ -173,7 +173,10 @@ all 151 back pictures, rather than claiming visual coverage of every back.
 
 This is a scripted in-game rendering test, not a manual playthrough: it uses the
 game's intro-skip initialization, supplies a player party through `AddPartyMon`,
-and starts encounters through `InitOpponent`. A trainer's party definition is
+and starts trainer encounters through `InitOpponent`. Wild encounters enter
+`InitBattleCommon` with the state normally produced by `TryDoWildEncounter`;
+keeping `wCurOpponent` zero avoids activating Marowak's scripted ghost battle.
+A trainer's party definition is
 overridden only in emulator memory to make it send the selected test species.
 The real battle initialization reaches its normal fight menu. Pokédex tests
 use `ShowPokedexData` with the normal menu graphics prerequisites and seen-only
@@ -195,3 +198,36 @@ Remaining limits before a full custom-art import:
 - The original 1 MiB size is preserved in both production and diagnostic builds;
   passing these three patterns does not establish capacity for an arbitrary set
   of 151 future designs.
+
+## Full 151-Pokémon in-game gallery
+
+To inspect every current design, generate the full gallery with the same
+PyBoy/Pillow environment:
+
+```sh
+/tmp/sprite-tests/bin/python tools/render_sprite_gallery.py \
+    --rgbds /workspace/.toolchains/rgbds-1.0.4 \
+    --output /tmp/all-151-sprite-gallery
+```
+
+Open `index.html`, or extract `sprite-gallery.zip` and open its `index.html`.
+The gallery has name/number search and game/screen filters. Each design links
+to full, original-resolution emulator screenshots. Twelve paginated overview
+sheets show numbered battle and mirrored Pokédex crops at nearest-neighbor 2×
+scale. `results.json` records each screen, species, dimensions, linked bank,
+crop location, and pixel-comparison result. Screenshots and gallery files are
+also included under `all-151` in Linux CI's `sprite-rendering` artifact.
+
+All 151 species are captured in wild battles, trainer battles, and seen-only
+Pokédex entries in **both** games: **906 screens**. The full 56×56 front buffer
+in each capture must match the artwork after the original alignment/flip rules.
+The displayed Rhydon back crop must remain consistent throughout the battles.
+The suite hashes the ROMs and front PNGs before and after to confirm that
+gallery generation does not change them. Both ROMs must remain 1 MiB.
+
+This extends visual coverage to all current designs in these three contexts;
+the scripted encounter setup and limits described above still apply. Pixel
+agreement validates rendering, not the artistic quality of a design. Use the
+gallery to review silhouettes, optical centering, spacing, facing direction,
+and shading. It does not replace manual review of battle animations, status
+screens, owned Pokédex text, or SGB palettes.
