@@ -231,3 +231,31 @@ agreement validates rendering, not the artistic quality of a design. Use the
 gallery to review silhouettes, optical centering, spacing, facing direction,
 and shading. It does not replace manual review of battle animations, status
 screens, owned Pokédex text, or SGB palettes.
+
+### Lightweight offline gallery
+
+To repackage existing captures without rebuilding ROMs or running an emulator:
+
+```sh
+python tools/build_lightweight_gallery.py \
+    --source /tmp/all-151-sprite-gallery \
+    --output /tmp/lightweight-sprite-gallery
+```
+
+Only Pillow is required. The input directory must contain the full gallery's
+`results.json` and captured PNGs. The packager creates a separate HTML gallery
+with one 56×56 thumbnail per Pokémon, ordered by Pokédex number. It defaults to
+24 entries per page, supports search and 48-entry pages, and lazily loads only
+the thumbnails on the current page. All 151 thumbnail PNGs are embedded directly
+in the HTML as base64 data URIs, so they do not depend on relative image paths
+in an isolated preview. Selecting a Pokémon opens one full
+screenshot; game and screen selectors load other captures individually.
+
+Download `lightweight-gallery.zip`, extract the entire archive, and open
+`index.html` in a modern browser. The HTML alone displays the entire paginated
+thumbnail gallery. Keep its `assets` directory alongside it for full screenshots.
+Inline data and ordinary relative image paths allow local use without a web
+server, network connection, fetch requests, or third-party scripts. The HTML
+does not embed the full screenshot images. Closing the viewer removes its
+screenshot from the page. This operation changes only the new gallery package;
+it does not read, rebuild, or modify ROMs or source artwork.
