@@ -2,12 +2,28 @@
 ; assumes the corresponding mon header is already loaded
 ; hl contains offset to sprite pointer ($b for front or $d for back)
 UncompressMonSprite::
+	ld a, l
+	cp wMonHFrontSprite - wMonHeader
+	push af ; retain front/back selection while fetching the pointer
 	ld bc, wMonHeader
 	add hl, bc
 	ld a, [hli]
 	ld [wSpriteInputPtr], a    ; fetch sprite input pointer
 	ld a, [hl]
 	ld [wSpriteInputPtr+1], a
+	pop af
+	jr nz, .legacyBank ; back sprites retain their original banks
+; Special headers do not contain a front bank byte.
+	ld a, [wCurPartySpecies]
+	cp FOSSIL_KABUTOPS
+	jr z, .legacyBank
+	cp FOSSIL_AERODACTYL
+	jr z, .legacyBank
+	cp MON_GHOST
+	jr z, .legacyBank
+	ld a, [wMonHFrontSpriteBank]
+	jp UncompressSpriteData
+.legacyBank
 ; define (by index number) the bank that a pokemon's image is in
 ; index = MEW:             bank $1
 ; index = FOSSIL_KABUTOPS: bank $B
@@ -19,7 +35,7 @@ UncompressMonSprite::
 	ld a, [wCurPartySpecies]
 	ld b, a
 	cp MEW
-	ld a, BANK(MewPicFront)
+	ld a, BANK(MewPicBack)
 	jr z, .GotBank
 	ld a, b
 	cp FOSSIL_KABUTOPS

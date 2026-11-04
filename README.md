@@ -12,6 +12,9 @@ It builds the following ROMs:
 
 To set up the repository, see [**INSTALL.md**](INSTALL.md).
 
+For importing custom Pokémon front sprites and checking ROM bank allocation, see
+[**Front sprite workflow**](docs/front-sprites.md).
+
 
 ## See also
 

@@ -1540,8 +1540,10 @@ wMonHBackSprite:: dw
 wMonHMoves:: ds NUM_MOVES
 wMonHGrowthRate:: db
 wMonHLearnset:: flag_array NUM_TMS + NUM_HMS
-	ds 1
+wMonHFrontSpriteBank:: db
 wMonHeaderEnd::
+	ASSERT wMonHFrontSpriteBank - wMonHeader == BASE_FRONTPIC_BANK
+	ASSERT wMonHeaderEnd - wMonHeader == BASE_DATA_SIZE
 
 ; saved at the start of a battle and then written back at the end of the battle
 wSavedTileAnimations:: db

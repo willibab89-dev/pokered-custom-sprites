@@ -45,6 +45,13 @@ jobs:
           make -j$(nproc)
           .github/checkdiff.sh
 
+      - name: Verify front sprite allocation and loading
+        run: |
+          python3 tools/front_sprites.py
+          python3 -m venv "$RUNNER_TEMP/sprite-tests"
+          "$RUNNER_TEMP/sprite-tests/bin/pip" install pyboy==2.6.1
+          "$RUNNER_TEMP/sprite-tests/bin/python" tools/test_front_sprites.py
+
       - name: Checkout symbols
         if: ${{ github.repository_owner == 'pret' && github.event_name == 'push' }}
         uses: actions/checkout@v7
