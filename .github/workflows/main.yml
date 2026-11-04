@@ -45,6 +45,23 @@ jobs:
           make -j$(nproc)
           .github/checkdiff.sh
 
+      - name: Verify front sprite allocation and loading
+        run: |
+          python3 tools/front_sprites.py
+          python3 -m venv "$RUNNER_TEMP/sprite-tests"
+          "$RUNNER_TEMP/sprite-tests/bin/pip" install pyboy==2.6.1 Pillow==11.3.0
+          "$RUNNER_TEMP/sprite-tests/bin/python" tools/test_front_sprites.py
+          "$RUNNER_TEMP/sprite-tests/bin/python" tools/test_sprite_rendering.py --output "$RUNNER_TEMP/sprite-rendering"
+          "$RUNNER_TEMP/sprite-tests/bin/python" tools/render_sprite_gallery.py --output "$RUNNER_TEMP/sprite-rendering/all-151"
+
+      - name: Save sprite rendering screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprite-rendering
+          path: ${{ runner.temp }}/sprite-rendering
+          if-no-files-found: ignore
+
       - name: Checkout symbols
         if: ${{ github.repository_owner == 'pret' && github.event_name == 'push' }}
         uses: actions/checkout@v7

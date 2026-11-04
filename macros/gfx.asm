@@ -20,3 +20,13 @@ MACRO? dbsprite
 ; x tile, y tile, x pixel, y pixel, vtile offset, attributes
 	db (\2 * TILE_WIDTH) % $100 + \4, (\1 * TILE_WIDTH) % $100 + \3, \5, \6
 ENDM
+
+; Open an indivisible, freely placed ROMX section; caller must POPS.
+; Keep INCBIN literal at the call site so scan_includes tracks dependencies.
+; Back pictures remain in their original sections and use the legacy bank lookup.
+MACRO mon_frontpic
+	PUSHS
+	SECTION "Front sprite \1", ROMX
+\1::
+	ASSERT BANK(\1) < $40, "Front sprites exceed the original 1 MiB ROM"
+ENDM
