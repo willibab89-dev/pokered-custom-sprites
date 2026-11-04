@@ -217,7 +217,9 @@ def suite(repo, variant, output, backs):
                     if variant == 'diagnostic':
                         assert bank == 0x3f
                     source = raster(repo, name)
-                    assert source.size == (size, size)
+                    # Imported artwork can change dimensions independently of species.
+                    assert source.width == source.height and source.width in (40, 48, 56)
+                    size = source.width
                     for context in ('wild', 'trainer', 'pokedex'):
                         image, frames = scenes.capture(dexes.index(dex) + 1, context)
                         scroll_x = scenes.boy.memory[0xff43]
@@ -252,7 +254,7 @@ def suite(repo, variant, output, backs):
 
 
 def gallery(output, records):
-    for variant in ('stock', 'diagnostic'):
+    for variant in ('current', 'diagnostic'):
         for stem in ('pokered', 'pokeblue'):
             selected = [r for r in records if r['variant'] == variant and r['rom'] == stem]
             sheet = Image.new('RGB', (3 * 336, 3 * 324 + 32), '#eeeeee')
@@ -267,12 +269,12 @@ def gallery(output, records):
     content = ['<!doctype html><meta charset="utf-8"><title>Sprite rendering regression</title>',
                '<style>body{font:16px system-ui;max-width:1100px;margin:24px auto}img{max-width:100%;image-rendering:pixelated}</style>',
                '<h1>Sprite rendering regression</h1>',
-               '<p>36 captured screens: 2 games × 3 dimensions × 3 contexts × stock/diagnostic. '
+               '<p>36 captured screens: 2 games × 3 species × 3 contexts × current/diagnostic. '
                'All 56×56 front-buffer pixels match the independent oracle. '
                'Diagnostic fronts are pinned to bank 3f in a disposable build. '
                'Player back crops remain identical. Encounters are set up through emulator memory; '
                'screens are rendered by the original game routines with LCD/VBlank active.</p>']
-    for variant in ('stock', 'diagnostic'):
+    for variant in ('current', 'diagnostic'):
         for stem in ('pokered', 'pokeblue'):
             name = f'{variant}-{stem}-contact.png'
             content.append(f'<h2>{variant} / {stem}</h2><a href="{name}"><img src="{name}"></a>')
@@ -302,7 +304,7 @@ def main():
     original_roms = {str(ROOT / f'{stem}.gbc'): hashlib.sha256(
         (ROOT / f'{stem}.gbc').read_bytes()).hexdigest() for stem in ('pokered', 'pokeblue')}
     backs = {}
-    records = suite(ROOT, 'stock', output, backs)
+    records = suite(ROOT, 'current', output, backs)
     with tempfile.TemporaryDirectory(prefix='sprite-rendering-') as folder:
         repo = Path(folder)
         # Copy tracked inputs, including local edits; exclude .git and outputs.

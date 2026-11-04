@@ -35,13 +35,18 @@ def check_preserved(stem, baseline):
     old_syms = symbols(baseline / f'{stem}.sym')
     new_syms = symbols(ROOT / f'{stem}.sym')
     source = (ROOT / 'gfx/pics.asm').read_text() + (ROOT / 'data/pokemon/mew.asm').read_text()
-    for dex, (_, _, back, _) in enumerate(manifest(), 1):
+    for dex, (png, _, back, _) in enumerate(manifest(), 1):
         headers = []
         for rom, syms in ((old, old_syms), (new, new_syms)):
             start = (offset(syms['MewBaseStats']) if dex == 151 else
                      offset(syms['BaseStats']) + (dex - 1) * 28)
             data = rom[start:start + 28]
-            headers.append(data[:11] + data[15:27])
+            # Dimensions, pointers, and front bank are artwork metadata; all
+            # gameplay fields must remain identical to the pristine build.
+            headers.append(data[:10] + data[15:27])
+            if rom is new:
+                pic = (ROOT / png.replace('.png', '.pic')).read_bytes()
+                assert data[10] == pic[0], f'{stem}: dex {dex} dimensions do not match artwork'
         assert headers[0] == headers[1], f'{stem}: dex {dex} gameplay fields changed'
         path = re.search(rf'{back}::\s+INCBIN "([^"]+)"', source)[1]
         size = (ROOT / path).stat().st_size

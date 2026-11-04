@@ -112,7 +112,8 @@ before making changes, then supply their directory:
 
 This checks all original gameplay fields (excluding relocated pointers and the
 repurposed padding byte) and all compressed back pictures against that build.
-The baseline check also expects the original front dimensions.
+Front dimensions may change with imported artwork; they are checked against the
+current compressed picture header instead of the pristine dimensions.
 
 Implementation validation used stock artwork: original ROM hashes matched;
 all 151 PNGs passed batch import/round-trip and linked-data checks; Red, Blue,
@@ -141,10 +142,12 @@ and forced bank placements are confined to that copy. It checks hashes of the
 checkout's Pokémon PNGs and production ROMs afterward. ROMs are not included
 in the screenshot artifacts.
 
-The 36-screen matrix covers Red and Blue, each with 40×40 Bulbasaur, 48×48
-Nidorino, and 56×56 Venusaur, in a wild battle, trainer battle, and Pokédex
-entry. Each screen is tested with stock art and then with bordered, asymmetric
-diagnostic patterns forced into bank `$3f`. The full 56×56 front-buffer crop
+The 36-screen matrix covers Red and Blue, each with Bulbasaur, Nidorino, and
+Venusaur, in a wild battle, trainer battle, and Pokédex entry. It reads the
+current artwork's dimensions rather than assuming each species retains its
+original size. Each screen is tested with current art and then with bordered,
+asymmetric 40×40, 48×48, and 56×56 diagnostic patterns forced into bank `$3f`.
+The full 56×56 front-buffer crop
 must match an independent row-major pixel oracle exactly. This exercises the
 ROM's header lookup, decompression, centering, interlacing, VBlank VRAM transfer,
 tilemap placement, palettes, and the Pokédex's horizontal flip. It accounts for
@@ -179,9 +182,9 @@ production gameplay or graphics-loading code is patched for these tests.
 
 Remaining limits before a full custom-art import:
 
-- Visual coverage is representative, not all 151 species in every scene. These
-  three named stock sprites are expected to retain their original dimensions
-  when running this stock-art regression matrix.
+- Visual coverage is representative, not all 151 species in every scene. The
+  three named current sprites must use 40×40, 48×48, or 56×56 dimensions; the
+  separate diagnostic matrix always covers all three sizes.
 - Battle turns, move animations/transforms, status screens, owned-entry text
   pagination, and SGB hardware/palettes are outside this visual suite.
 - Artwork must stay square and within 7×7 tiles. The importer currently accepts
