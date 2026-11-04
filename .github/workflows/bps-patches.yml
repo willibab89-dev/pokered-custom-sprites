@@ -13,17 +13,20 @@ jobs:
   patches:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      RGBDS: ${{ runner.temp }}/rgbds-1.0.4/
-      ORIGINAL_SOURCE: ${{ runner.temp }}/original-source
-      FLIPS_SOURCE: ${{ runner.temp }}/flips
-      PATCH_OUTPUT: ${{ runner.temp }}/bps-artifacts
     steps:
       - name: Check out source and pinned baseline history
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Set temporary working directories
+        run: |
+          printf '%s\n' \
+            "RGBDS=$RUNNER_TEMP/rgbds-1.0.4/" \
+            "ORIGINAL_SOURCE=$RUNNER_TEMP/original-source" \
+            "FLIPS_SOURCE=$RUNNER_TEMP/flips" \
+            "PATCH_OUTPUT=$RUNNER_TEMP/bps-artifacts" >> "$GITHUB_ENV"
 
       - name: Install checksum-verified RGBDS 1.0.4
         shell: bash
