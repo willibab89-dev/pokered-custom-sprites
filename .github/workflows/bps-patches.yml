@@ -1,0 +1,84 @@
+name: BPS patches
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  patches:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RGBDS: ${{ runner.temp }}/rgbds-1.0.4/
+      ORIGINAL_SOURCE: ${{ runner.temp }}/original-source
+      FLIPS_SOURCE: ${{ runner.temp }}/flips
+      PATCH_OUTPUT: ${{ runner.temp }}/bps-artifacts
+    steps:
+      - name: Check out source and pinned baseline history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install checksum-verified RGBDS 1.0.4
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/rgbds-1.0.4.tar.xz"
+          curl --fail --location --retry 3 https://github.com/gbdev/rgbds/releases/download/v1.0.4/rgbds-linux-x86_64.tar.xz -o "$archive"
+          printf '%s  %s\n' 3e19e50ea602e316be709160acaf0a708b1fa6d32d219ec541f244442895dbb7 "$archive" | sha256sum -c -
+          mkdir -p "$RGBDS"
+          tar -xJf "$archive" -C "$RGBDS"
+          "${RGBDS}rgbasm" --version
+
+      - name: Reconstruct original ROMs privately from pinned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ORIGINAL_SOURCE"
+          git archive 0dbf95cd12f5b1511c62ce69efe283000f780a8f | tar -x -C "$ORIGINAL_SOURCE"
+          make -C "$ORIGINAL_SOURCE" -j2 RGBDS="$RGBDS" red blue
+
+      - name: Build and audit custom Red and Blue ROMs
+        run: python3 tools/front_sprites.py --rgbds "$RGBDS"
+
+      - name: Verify original gameplay fields and all front/back pictures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/sprite-tests"
+          "$RUNNER_TEMP/sprite-tests/bin/pip" install pyboy==2.6.1 Pillow==11.3.0
+          "$RUNNER_TEMP/sprite-tests/bin/python" tools/test_front_sprites.py --baseline "$ORIGINAL_SOURCE"
+
+      - name: Build pinned Floating IPS command-line tool
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/Alcaro/Flips.git "$FLIPS_SOURCE"
+          git -C "$FLIPS_SOURCE" checkout --detach 359d414cff73b3e0400871d3c288a59b36564834
+          make -C "$FLIPS_SOURCE" -j2 TARGET=cli CFLAGS=-O2 COMMIT_COUNT=198
+
+      - name: Generate BPS patches and verify exact application results
+        run: |
+          python3 tools/build_bps_patches.py \
+            --originals "$ORIGINAL_SOURCE" \
+            --flips "$FLIPS_SOURCE/flips" \
+            --output "$PATCH_OUTPUT"
+
+      - name: Publish patches and instructions only
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-custom-fronts-bps
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            ${{ runner.temp }}/bps-artifacts/pokered-custom-fronts.bps
+            ${{ runner.temp }}/bps-artifacts/pokeblue-custom-fronts.bps
+            ${{ runner.temp }}/bps-artifacts/README-WINDOWS.md
+            ${{ runner.temp }}/bps-artifacts/manifest.json
+            ${{ runner.temp }}/bps-artifacts/SHA256SUMS.txt

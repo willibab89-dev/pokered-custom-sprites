@@ -15,6 +15,9 @@ To set up the repository, see [**INSTALL.md**](INSTALL.md).
 For importing custom Pokémon front sprites and checking ROM bank allocation, see
 [**Front sprite workflow**](docs/front-sprites.md).
 
+For downloadable BPS patches, required original ROM checksums, and Windows
+patching instructions, see [**BPS patches**](docs/bps-patches.md).
+
 
 ## See also
 
