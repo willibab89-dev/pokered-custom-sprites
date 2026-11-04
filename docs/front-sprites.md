@@ -120,3 +120,75 @@ and Blue debug built; the emulator suite and baseline preservation checks
 passed. A temporary test forced Bulbasaur's front to bank `$3f` and reran the
 Red/Blue emulator suite successfully; a forced bank `$40` failed the size guard.
 Those temporary placement edits were removed and the normal build restored.
+
+## Visual rendering tests
+
+Run the screenshot and pixel-comparison suite with RGBDS 1.0.4 and these
+optional Python dependencies:
+
+```sh
+/tmp/sprite-tests/bin/pip install pyboy==2.6.1 Pillow==11.3.0
+/tmp/sprite-tests/bin/python tools/test_sprite_rendering.py \
+    --rgbds /workspace/.toolchains/rgbds-1.0.4 \
+    --output /tmp/sprite-rendering
+```
+
+Open the generated `index.html` locally, or inspect the contact-sheet PNGs,
+individual 160×144 screenshots, and `results.json`. Linux CI runs this suite
+and uploads the same files as the `sprite-rendering` artifact. The suite makes
+a disposable copy of tracked build inputs; all three temporary diagnostic PNGs
+and forced bank placements are confined to that copy. It checks hashes of the
+checkout's Pokémon PNGs and production ROMs afterward. ROMs are not included
+in the screenshot artifacts.
+
+The 36-screen matrix covers Red and Blue, each with 40×40 Bulbasaur, 48×48
+Nidorino, and 56×56 Venusaur, in a wild battle, trainer battle, and Pokédex
+entry. Each screen is tested with stock art and then with bordered, asymmetric
+diagnostic patterns forced into bank `$3f`. The full 56×56 front-buffer crop
+must match an independent row-major pixel oracle exactly. This exercises the
+ROM's header lookup, decompression, centering, interlacing, VBlank VRAM transfer,
+tilemap placement, palettes, and the Pokédex's horizontal flip. It accounts for
+the battle scene's existing scroll offset when locating the crop.
+
+The original alignment policy is bottom-aligned and horizontally snapped to
+tiles; it is not optical or half-tile centering:
+
+| Source size | Battle left/top padding | Battle right/bottom padding | Pokédex left/right padding |
+| --- | --- | --- | --- |
+| 40×40 | 8 / 16 px | 8 / 0 px | 8 / 8 px |
+| 48×48 | 8 / 8 px | 0 / 0 px | 0 / 8 px |
+| 56×56 | 0 / 0 px | 0 / 0 px | 0 / 0 px |
+
+The Pokédex mirrors the whole aligned buffer, so the 48×48 horizontal bias
+reverses. Designers should consider their artwork's own whitespace and foot
+placement; unchanged original routines determine alignment. Diagnostic borders
+touch every source edge and distinct corner markers expose clipping or incorrect
+mirroring. All 36 crops passed, including the three relocated fronts in each
+game. Rhydon's displayed player-back crop remained pixel-identical across every
+stock/diagnostic wild and trainer scene. The separate routine-level suite covers
+all 151 back pictures, rather than claiming visual coverage of every back.
+
+This is a scripted in-game rendering test, not a manual playthrough: it uses the
+game's intro-skip initialization, supplies a player party through `AddPartyMon`,
+and starts encounters through `InitOpponent`. A trainer's party definition is
+overridden only in emulator memory to make it send the selected test species.
+The real battle initialization reaches its normal fight menu. Pokédex tests
+use `ShowPokedexData` with the normal menu graphics prerequisites and seen-only
+entries to avoid description pagination. LCD and VBlank remain enabled. No
+production gameplay or graphics-loading code is patched for these tests.
+
+Remaining limits before a full custom-art import:
+
+- Visual coverage is representative, not all 151 species in every scene. These
+  three named stock sprites are expected to retain their original dimensions
+  when running this stock-art regression matrix.
+- Battle turns, move animations/transforms, status screens, owned-entry text
+  pagination, and SGB hardware/palettes are outside this visual suite.
+- Artwork must stay square and within 7×7 tiles. The importer currently accepts
+  8–56 pixel squares, but this visual matrix specifically covers 40/48/56.
+- Four-color DMG mapping, intended mirroring, whitespace, bottom alignment, and
+  compressed size still need review for each imported design. High-detail art
+  may compress poorly; the existing size reports and bank guard remain required.
+- The original 1 MiB size is preserved in both production and diagnostic builds;
+  passing these three patterns does not establish capacity for an arbitrary set
+  of 151 future designs.
